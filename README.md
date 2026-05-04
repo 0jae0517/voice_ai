@@ -21,11 +21,11 @@
 ## 실행 방법
 ```bash
 # 저장소 클론
-git clone https://github.com/username/repo-name.git
-cd repo-name
+git clone https://github.com/0jae0517/voice_ai.git
+cd voice_ai
 
 # 필요한 라이브러리 설치
 pip install -r requirements.txt
 
 # 실행
-streamlit run app.py
+streamlit run voicebot.py
