@@ -1,25 +1,27 @@
 import streamlit as st
-from audiorecorder import audiorecorder
 import openai
 import os
 from datetime import datetime
 from gtts import gTTS
 import base64
-import threading
-# 기능 구현 함수
-def STT(audio, apikey):
-    # 파일 저장
-    filename='input.mp3'
-    audio.export(filename, format="mp3")
+from io import BytesIO
 
-    # 음원 파일 열기
-    audio_file = open(filename,"rb")
-    # Whisper 모델을 활용해 텍스트 얻기
+# 기능 구현 함수
+def STT(audio_file, apikey):
+    if not apikey:
+        st.error("OpenAI API KEY를 입력해주세요.")
+        st.stop()
+
+    audio_bytes = audio_file.getvalue()
+    file_obj = BytesIO(audio_bytes)
+    file_obj.name = "input.wav"
+
     client = openai.OpenAI(api_key=apikey)
-    response = client.audio.transcriptions.create(model = "whisper-1", file=audio_file)
-    audio_file.close()
-    # 파일 삭제
-    os.remove(filename)
+    response = client.audio.transcriptions.create(
+        model="whisper-1",
+        file=file_obj
+    )
+
     return response.text
 
 def ask_gpt(prompt, model, apikey):
@@ -114,30 +116,30 @@ def main():
                 st.session_state["message"] = [{"role": "system", "content": "You are a thoughtful assistant. Respond to all input in 25 words and answer in Korean"}]
                 st.session_state["check_reset"] = True
 
+        question = None
+
         # 기능 구현 공간 
         col1, col2 = st.columns(2)
         with col1:
             # 왼쪽 영역 작성
             st.subheader("질문하기")
             # 음성 녹음 아이콘 추가
-            audio = audiorecorder("클릭하여 녹음하기", "녹음 중...")
-            if (audio.duration_seconds > 0) and (st.session_state["check_reset"] == False):
-                # 녹음을 실행하면?
-                # 음성 재생
-                st.audio(audio.export().read())
-                # 음원 파일에서 텍스트 추출
+            audio = st.audio_input("클릭하여 녹음하기", sample_rate=16000)
+
+            if audio is not None and (st.session_state["check_reset"] == False):
+                st.audio(audio)
                 question = STT(audio, st.session_state["OPENAI_API"])
 
-                # 채팅을 시각화하기 위해 질문 내용 저장
                 now = datetime.now().strftime("%H:%M")
                 st.session_state["chat"] = st.session_state["chat"] + [("user", now, question)]
-                # GPT 모델에 넣을 프롬프트를 위해 질문 내용 저장
-                st.session_state["message"] = st.session_state["message"] + [{"role": "user", "content": question}]
+                st.session_state["message"] = st.session_state["message"] + [
+                    {"role": "user", "content": question}
+                ]
 
         with col2:
             # 오른쪽 영역 작성
             st.subheader("질문/답변")
-            if (audio.duration_seconds > 0) and (st.session_state["check_reset"] == False):
+            if question is not None and (st.session_state["check_reset"] == False):
                 # GPT에게 답변 얻기
                 response = ask_gpt(st.session_state["message"], model, st.session_state["OPENAI_API"])
 
@@ -162,4 +164,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
