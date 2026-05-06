@@ -96,71 +96,70 @@ def main():
 
         st.markdown("")
 
-        # 사이드 바 생성
-        with st.sidebar:
+    # 사이드 바 생성
+    with st.sidebar:
 
-            # OpenAI API 키 입력받기
-            st.session_state["OPENAI_API"] = st.text_input(label="OPENAI API KEY", placeholder="Enter Your API Key", value="", type="password")
+        # OpenAI API 키 입력받기
+        st.session_state["OPENAI_API"] = st.text_input(label="OPENAI API KEY", placeholder="Enter Your API Key", value="", type="password")
 
-            st.markdown("---")
+        st.markdown("---")
 
-            # GPT 모델을 선택하기 위한 라디오 버튼 생성
-            model = st.radio(label="GPT 모델", options=["gpt-4", "gpt-3.5-turbo"])
+        # GPT 모델을 선택하기 위한 라디오 버튼 생성
+        model = st.radio(label="GPT 모델", options=["gpt-4", "gpt-3.5-turbo"])
 
-            st.markdown("---")
+        st.markdown("")
 
-            # 리셋 버튼 생성
-            if st.button(label="초기화"):
-                # 리셋 코드
-                st.session_state["chat"] = []
-                st.session_state["message"] = [{"role": "system", "content": "You are a thoughtful assistant. Respond to all input in 25 words and answer in Korean"}]
-                st.session_state["check_reset"] = True
+        # 리셋 버튼 생성
+        if st.button(label="초기화"):
+            # 리셋 코드
+            st.session_state["chat"] = []
+            st.session_state["message"] = [{"role": "system", "content": "You are a thoughtful assistant. Respond to all input in 25 words and answer in Korean"}]
+            st.session_state["check_reset"] = True
 
-        question = None
+    question = None
 
-        # 기능 구현 공간 
-        col1, col2 = st.columns(2)
-        with col1:
-            # 왼쪽 영역 작성
-            st.subheader("질문하기")
-            # 음성 녹음 아이콘 추가
-            audio = st.audio_input("클릭하여 녹음하기", sample_rate=16000)
+    # 기능 구현 공간 
+    col1, col2 = st.columns(2)
+    with col1:
+        # 왼쪽 영역 작성
+        st.subheader("질문하기")
+        # 음성 녹음 아이콘 추가
+        audio = st.audio_input("클릭하여 녹음하기", sample_rate=16000)
 
-            if audio is not None and (st.session_state["check_reset"] == False):
-                st.audio(audio)
-                question = STT(audio, st.session_state["OPENAI_API"])
+        if audio is not None and (st.session_state["check_reset"] == False):
+            st.audio(audio)
+            question = STT(audio, st.session_state["OPENAI_API"])
 
-                now = datetime.now().strftime("%H:%M")
-                st.session_state["chat"] = st.session_state["chat"] + [("user", now, question)]
-                st.session_state["message"] = st.session_state["message"] + [
-                    {"role": "user", "content": question}
-                ]
+            now = datetime.now().strftime("%H:%M")
+            st.session_state["chat"] = st.session_state["chat"] + [("user", now, question)]
+            st.session_state["message"] = st.session_state["message"] + [
+                {"role": "user", "content": question}
+            ]
 
-        with col2:
-            # 오른쪽 영역 작성
-            st.subheader("질문/답변")
-            if question is not None and (st.session_state["check_reset"] == False):
-                # GPT에게 답변 얻기
-                response = ask_gpt(st.session_state["message"], model, st.session_state["OPENAI_API"])
+    with col2:
+        # 오른쪽 영역 작성
+        st.subheader("질문/답변")
+        if question is not None and (st.session_state["check_reset"] == False):
+            # GPT에게 답변 얻기
+            response = ask_gpt(st.session_state["message"], model, st.session_state["OPENAI_API"])
+            # GPT 모델에 넣을 프롬프트를 위해 답변 내용 저장
+            st.session_state["message"] = st.session_state["message"] + [{"role": "assistant", "content": response}]
 
-                # GPT 모델에 넣을 프롬프트를 위해 답변 내용 저장
-                st.session_state["message"] = st.session_state["message"] + [{"role": "assistant", "content": response}]
-
-                # 채팅 시각화를 위한 답변 내용 저장
-                now = datetime.now().strftime("%H:%M")
-                st.session_state["chat"] = st.session_state["chat"] + [("bot", now, response)]
+            # 채팅 시각화를 위한 답변 내용 저장
+            now = datetime.now().strftime("%H:%M")
+            st.session_state["chat"] = st.session_state["chat"] + [("bot", now, response)]
                 
-                # 채팅 형식으로 시각화하기
-                for sender, time, message in st.session_state["chat"]:
-                    if sender == "user":
-                        st.write(f'<div style="display:flex;align-items:center;"><div style="background-color:#007AFF;color:white;border-radius:12px;padding:8px 12px;margin-right:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', unsafe_allow_html=True)
-                        st.write("")
-                    else:
-                        st.write(f'<div style="display:flex;align-items:center;justify-content:flex-end;"><div style="background-color:gray;border-radius:12px;padding:8px 12px;margin-left:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', unsafe_allow_html=True)
-                        st.write("")
+            # 채팅 형식으로 시각화하기
+            for sender, time, message in st.session_state["chat"]:
+                if sender == "user":
+                    st.write(f'<div style="display:flex;align-items:center;"><div style="background-color:#007AFF;color:white;border-radius:12px;padding:8px 12px;margin-right:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', unsafe_allow_html=True)
+                    st.write("")
+                else:
+                    st.write(f'<div style="display:flex;align-items:center;justify-content:flex-end;"><div style="background-color:gray;border-radius:12px;padding:8px 12px;margin-left:8px;">{message}</div><div style="font-size:0.8rem;color:gray;">{time}</div></div>', unsafe_allow_html=True)
+                    st.write("")
 
-                # gTTS를 활용하여 음성 파일 생성 및 재생
-                TTS(response)        
+            # gTTS를 활용하여 음성 파일 생성 및 재생
+            TTS(response)        
 
 if __name__ == "__main__":
     main()
